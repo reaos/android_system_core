@@ -37,6 +37,7 @@
 #include <android-base/file.h>
 #include <android-base/logging.h>
 #include <android-base/stringify.h>
+#include <android-base/strings.h>
 #include <android-base/stringprintf.h>
 #include <android/avf_cc_flags.h>
 #include <fs_mgr.h>
@@ -352,6 +353,8 @@ int FirstStageMain(int argc, char** argv) {
     CHECKCALL(mkdir("/dev/pts", 0755));
     CHECKCALL(mkdir("/dev/socket", 0755));
     CHECKCALL(mkdir("/dev/dm-user", 0755));
+    mount("/system/etc", "/etc", "none", MS_BIND, NULL); // cgroup fix
+    unshare(CLONE_NEWCGROUP);
     CHECKCALL(mount("devpts", "/dev/pts", "devpts", 0, NULL));
 #define MAKE_STR(x) __STRING(x)
     CHECKCALL(mount("proc", "/proc", "proc", 0, "hidepid=2,gid=" MAKE_STR(AID_READPROC)));
@@ -418,7 +421,6 @@ int FirstStageMain(int argc, char** argv) {
         for (const auto& [error_string, error_errno] : errors) {
             LOG(ERROR) << error_string << " " << strerror(error_errno);
         }
-        LOG(FATAL) << "Init encountered errors starting first stage, aborting";
     }
 
     LOG(INFO) << "init first stage started!";
@@ -555,7 +557,17 @@ int FirstStageMain(int argc, char** argv) {
            1);
 
     const char* path = "/system/bin/init";
-    const char* args[] = {path, "selinux_setup", nullptr};
+    std::vector<const char *> args = {path, "second_stage"};
+    std::string init_cmdline;
+    android::base::ReadFileToString("/proc/self/cmdline", &init_cmdline);
+    std::replace(init_cmdline.begin(), init_cmdline.end(), '\0', ' ');
+    auto cmd_vector = android::base::Split(android::base::Trim(init_cmdline), " ");
+    int i = 0;
+    for (const auto& entry : cmd_vector) {
+        if (i++ == 0) continue; // ignore first arg '/init'
+        args.push_back(entry.c_str());
+    }
+    args.push_back(nullptr);
     auto fd = open("/dev/kmsg", O_WRONLY | O_CLOEXEC);
     dup2(fd, STDOUT_FILENO);
     dup2(fd, STDERR_FILENO);
@@ -572,7 +584,7 @@ int FirstStageMain(int argc, char** argv) {
     // are inherited beyond exec.
     setenv("HWASAN_OPTIONS", STRINGIFY(HWASAN_OPTIONS), true);
 #endif
-    execv(path, const_cast<char**>(args));
+    execv(path, const_cast<char**>(args.data()));
 
     // execv() only returns if an error happened, in which case we
     // panic and never fall through this conditional.

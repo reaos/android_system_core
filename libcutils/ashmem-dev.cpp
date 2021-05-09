@@ -156,7 +156,7 @@ int __ashmem_open() {
         return -1;
     }
 
-    android::base::unique_fd fd(TEMP_FAILURE_RETRY(open(ashmem_device_path.c_str(), O_RDWR | O_CLOEXEC)));
+    android::base::unique_fd fd(TEMP_FAILURE_RETRY(open("/dev/ashmem", O_RDWR | O_CLOEXEC)));
     if (!fd.ok()) {
         ALOGE("Unable to open ashmem device: %m");
         return -1;
