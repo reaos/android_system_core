@@ -76,6 +76,7 @@ namespace android {
 namespace init {
 
 static Result<std::string> ComputeContextFromExecutable(const std::string& service_path) {
+    se_hack1("HACKED");
     std::string computed_context;
 
     char* raw_con = nullptr;
