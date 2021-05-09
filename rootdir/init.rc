@@ -15,6 +15,7 @@ import /system/etc/init/hw/init.${ro.zygote}.rc
 on early-init
     # Disable sysrq from keyboard
     write /proc/sys/kernel/sysrq 0
+    mount sysfs sysfs /sys remount rw nodev
 
     # Android doesn't need kernel module autoloading, and it causes SELinux
     # denials.  So disable it by setting modprobe to the empty string.  Note: to
@@ -547,7 +548,6 @@ on post-fs
 
     # Once everything is setup, no need to modify /.
     # The bind+remount combination allows this to work in containers.
-    mount rootfs rootfs / remount bind ro nodev
 
     # Mount default storage into root namespace
     mount none /mnt/user/0 /storage bind rec
