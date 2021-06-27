@@ -530,6 +530,7 @@ int FirstStageMain(int argc, char** argv) {
         if (!fsm) {
             fsm = CreateFirstStageMount(cmdline);
         }
+        #if 0
         if (!fsm) {
             LOG(FATAL) << "FirstStageMount not available";
         }
@@ -539,8 +540,9 @@ int FirstStageMain(int argc, char** argv) {
         }
 
         if (!fsm->DoFirstStageMount()) {
-            LOG(FATAL) << "Failed to mount required partitions early ...";
+            LOG(ERROR) << "Failed to mount required partitions early ...";
         }
+        #endif
     }
 
     struct stat new_root_info {};
