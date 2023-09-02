@@ -223,7 +223,6 @@ on init
     exec -- /vendor/bin/binder_alloc /dev/binderfs/binder-control binder hwbinder vndbinder
 
     # Mount fusectl
-    mount fusectl none /sys/fs/fuse/connections
 
     symlink /dev/binderfs/binder /dev/binder
     symlink /dev/binderfs/hwbinder /dev/hwbinder
